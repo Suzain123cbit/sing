@@ -6,7 +6,7 @@ import lyricsgenius
 st.title("🎤 Taylor Swift Lyrics Visualizer")
 
 # Add your Genius API token here (keep this secret in real apps)
-GENIUS_API_TOKEN = "LWHbjh1qK_4RIMqAgbGkKfDgK7qfURxcjGy2diHlxXDLf8XFABKZ1DtPqlEX4ar9"
+GENIUS_API_TOKEN = "Hyj3OPecmkFPPyEgGPWgF9p9oDplEiU_u-L4KTPOGJ5nfQHQAlfEv4"
 genius = lyricsgenius.Genius(GENIUS_API_TOKEN, skip_non_songs=True, excluded_terms=["(Remix)", "(Live)"])
 
 song_title = st.text_input("Enter a Taylor Swift song title:")
