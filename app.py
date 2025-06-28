@@ -1,46 +1,27 @@
 import streamlit as st
-import requests
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
-from bs4 import BeautifulSoup
+import lyricsgenius
 
 st.title("🎤 Taylor Swift Lyrics Visualizer")
+
+# Add your Genius API token here (keep this secret in real apps)
+GENIUS_API_TOKEN = "LWHbjh1qK_4RIMqAgbGkKfDgK7qfURxcjGy2diHlxXDLf8XFABKZ1DtPqlEX4ar9"
+genius = lyricsgenius.Genius(GENIUS_API_TOKEN, skip_non_songs=True, excluded_terms=["(Remix)", "(Live)"])
 
 song_title = st.text_input("Enter a Taylor Swift song title:")
 
 if song_title:
-    headers = {
-        "Authorization": "Bearer LWHbjh1qK_4RIMqAgbGkKfDgK7qfURxcjGy2diHlxXDLf8XFABKZ1DtPqlEX4ar9"  # Replace this
-    }
-    search_url = f"https://api.genius.com/search?q=Taylor Swift {song_title}"
-    response = requests.get(search_url, headers=headers)
+    with st.spinner("Fetching lyrics..."):
+        song = genius.search_song(song_title, "Taylor Swift")
+        if song and song.lyrics:
+            st.subheader("Lyrics:")
+            st.text_area("Full Lyrics", song.lyrics, height=300)
 
-    if response.status_code == 200:
-        hits = response.json()["response"]["hits"]
-        if hits:
-            song_url = hits[0]["result"]["url"]  # Real song webpage
-            st.write(f"🔗 [View Song on Genius]({song_url})")
-
-            # Scrape lyrics from Genius song page
-            page = requests.get(song_url)
-            soup = BeautifulSoup(page.text, "html.parser")
-
-            # Genius lyrics are often within <div> tags with data-lyrics-container="true"
-            lyrics_divs = soup.find_all("div", attrs={"data-lyrics-container": "true"})
-            lyrics = "\n".join([div.get_text(separator="\n") for div in lyrics_divs])
-
-            if lyrics:
-                st.subheader("Lyrics:")
-                st.text_area("Full Lyrics", lyrics, height=300)
-
-                # Generate and display word cloud
-                wordcloud = WordCloud(width=800, height=400, background_color='white').generate(lyrics)
-                plt.imshow(wordcloud, interpolation='bilinear')
-                plt.axis("off")
-                st.pyplot(plt)
-            else:
-                st.warning("Could not extract lyrics from the song page.")
+            # Generate and display word cloud
+            wordcloud = WordCloud(width=800, height=400, background_color='white').generate(song.lyrics)
+            plt.imshow(wordcloud, interpolation='bilinear')
+            plt.axis("off")
+            st.pyplot(plt)
         else:
-            st.warning("No matching song found.")
-    else:
-        st.error("API error. Check your access token.")
+            st.warning("Could not find lyrics for this song.")
