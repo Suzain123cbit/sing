@@ -1,34 +1,42 @@
 import streamlit as st
 import requests
+from bs4 import BeautifulSoup
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
-from bs4 import BeautifulSoup
+
+# Set your Genius API token here
+GENIUS_API_TOKEN = "LWHbjh1qK_4RIMqAgbGkKfDgK7qfURxcjGy2diHlxXDLf8XFABKZ1DtPqlEX4ar9"
+
+st.set_page_config(page_title="Taylor Swift Lyrics Visualizer", page_icon="🎤")
 
 st.title("🎤 Taylor Swift Lyrics Visualizer")
-
 song_title = st.text_input("Enter a Taylor Swift song title:")
 
+def get_lyrics_from_url(song_url):
+    page = requests.get(song_url)
+    html = BeautifulSoup(page.text, "html.parser")
+    lyrics_divs = html.find_all("div", attrs={"data-lyrics-container": "true"})
+
+    if not lyrics_divs:
+        return None
+
+    lyrics = "\n".join([div.get_text(separator="\n") for div in lyrics_divs])
+    return lyrics.strip()
+
 if song_title:
-    headers = {
-        "Authorization": "Bearer LWHbjh1qK_4RIMqAgbGkKfDgK7qfURxcjGy2diHlxXDLf8XFABKZ1DtPqlEX4ar9"  # Replace this
-    }
+    # Search for the song using Genius API
     search_url = f"https://api.genius.com/search?q=Taylor Swift {song_title}"
+    headers = {"Authorization": f"Bearer {GENIUS_API_TOKEN}"}
     response = requests.get(search_url, headers=headers)
 
     if response.status_code == 200:
         hits = response.json()["response"]["hits"]
         if hits:
-            song_url = hits[0]["result"]["url"]  # Real song webpage
-            st.write(f"🔗 [View Song on Genius]({song_url})")
+            song_info = hits[0]["result"]
+            song_url = song_info["url"]
+            st.markdown(f"🔗 [View Song on Genius]({song_url})")
 
-            # Scrape lyrics from Genius song page
-            page = requests.get(song_url)
-            soup = BeautifulSoup(page.text, "html.parser")
-
-            # Genius lyrics are often within <div> tags with data-lyrics-container="true"
-            lyrics_divs = soup.find_all("div", attrs={"data-lyrics-container": "true"})
-            lyrics = "\n".join([div.get_text(separator="\n") for div in lyrics_divs])
-
+            lyrics = get_lyrics_from_url(song_url)
             if lyrics:
                 st.subheader("Lyrics:")
                 st.text_area("Full Lyrics", lyrics, height=300)
@@ -41,6 +49,6 @@ if song_title:
             else:
                 st.warning("Could not extract lyrics from the song page.")
         else:
-            st.warning("No matching song found.")
+            st.error("No song found.")
     else:
-        st.error("API error. Check your access token.")
+        st.error("API error occurred.")
