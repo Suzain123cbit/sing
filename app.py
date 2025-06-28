@@ -23,7 +23,6 @@ if song_title:
             response = requests.get(url, headers=headers)
             soup = BeautifulSoup(response.text, "html.parser")
 
-            # Grab lyrics from divs
             lyrics_divs = soup.select("div[data-lyrics-container='true']")
             lyrics = "\n".join([div.get_text(separator="\n") for div in lyrics_divs])
 
